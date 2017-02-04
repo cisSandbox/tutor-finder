@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Working Now Tutors</title>
+      <meta charset='utf-8' />
+      <script
+              src="https://code.jquery.com/jquery-2.2.4.min.js"
+              integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+              crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.10.0/jquery.timepicker.min.js"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.10.0/jquery.timepicker.min.css" />
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js"></script>
+      <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.5.0/css/bootstrap-datepicker.standalone.css">
+
+      <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/ui-lightness/jquery-ui.css" type="text/css" media="all">
+      <script src="http://jonthornton.github.io/Datepair.js/dist/datepair.js"></script>
+      <script src="http://jonthornton.github.io/Datepair.js/dist/jquery.datepair.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"></script>
+      <style>
+          body {
+              height:100%;
+          }
+          .tutors {
+              display: inline-block;
+              margin-right: 20px;
+          }
+          .tutors p {
+              margin-bottom: .25em;
+          }
+          .tutors img {
+              cursor: pointer;
+          }
+          .notutors {
+              font-size: 1.25em;
+              color: #964242;
+          }
+          .tutor-schedule-headline:first-letter {
+              text-transform: uppercase;
+          }
+          #title {
+              margin-bottom: 0;
+          }
+          #onSelect {
+              margin-bottom: .75rem;
+          }
+          #onSelectDate {
+              width: 120px;
+              font-size: 1em;
+          }
+          #onSelectTime {
+              width: 100px;
+              font-size: 1em;
+          }
+          #apply {
+              padding:5px;
+              background-color: #fff;
+              border: 1px solid #ddd;
+              font-family: inherit;
+              cursor: pointer;
+              margin: 12px 0 0 0;
+              display: inline-block;
+              font-size: 14px;
+          }
+          #now {
+              padding:5px;
+              background-color: #fff;
+              border: 1px solid #ddd;
+              font-family: inherit;
+              cursor: pointer;
+              margin: 12px 0 0 8px;
+              display: inline-block;
+              font-size: 14px;
+          }
+      </style>
+  </head>
+   <body>
+   <p>---------</p>
+   <p id="title"><b>Select a date & time (EST):</b></p>
+    <p id="onSelect">
+        <input id="onSelectDate" type="text" class="date start" />
+        <input id="onSelectTime" type="text" class="time start" />
+        <br />
+        <button id="apply">Apply Time</button>
+        <button id="now">Now</button>
+        <br />
+        <small>* Select date only to show all tutors work on that day</small>
+        <br />
+        <small>** Source: CIS Sandbox Group Calendar</small>
+    </p>
+    <div id="content"></div>
+    <p>---------</p>
+
+    <script type="text/javascript">
+       $(function() {
+            'use strict';
+            var baseURL = "https://www.googleapis.com/calendar/v3/calendars/bentleycis@gmail.com/events?&singleEvents=true&orderBy=startTime&timeMin=";
+            var APIKey = "&key=AIzaSyBXwv2VXYi1Xd6w04suJlAc2bhSO57xr-Y";
+            var currentTime = moment().format("YYYY-MM-DDTHH:mm:ssZ");
+            var timeMax = moment().endOf('day').format("YYYY-MM-DDTHH:mm:ssZ");
+            var imageBaseURL = "http://cis.bentley.edu/sandbox/wp-content/uploads/TutorImage/";
+            var imageSize = "-150x150.jpg";
+            var allEvents = []; //init
+
+            function getTutors() {
+                getEvents().done(function(){
+                    appendTutors(allEvents, currentTime);
+                });
+
+            }
+
+            function getEvents() {
+                allEvents = []; // clear for each time change
+                return $.getJSON(baseURL + currentTime + "&timeMax=" + timeMax + APIKey, function(data) {
+                    $.extend(allEvents, data.items);
+                })
+            }
+
+            function appendTutors(events, time) {
+                var n = 0; // count tutors in the events list but not working
+                for (var i = 0; i < events.length; i++) {
+                    if (events[i].summary.includes("Emily")) {
+                        events[i].summary = "Emilyk";
+                    }
+                    if (events[i].summary.toLowerCase().includes("nicolette")) {
+                        events[i].summary = "Nicollette";
+                    }
+                    if (time >= events[i].start.dateTime && time <= events[i].end.dateTime || time.substr(11) == "00:00:00-05:00") {
+                        $('#content').append('<div class="tutors" id="' + events[i].summary.toLowerCase().replace(/\s/g, "") + '"><p>' + events[i].summary + '</p>' + '<img src="' + imageBaseURL + events[i].summary.toLowerCase().replace(/\s/g, "") + imageSize + '"/></div>');
+                    } else {
+                        n += 1;
+                    }
+                }
+                if (n === events.length) {
+                    $('#content').append('<div class="notutors"><p>There is no tutor working at this time</p></div>');
+                }
+            }
+
+            function getTutorSchedule(tutor, events) {
+                $('#content').append('<div class="tutor-schedule-headline">' + '<p>' + tutor + '\'s schedule till next week: </p></div>');
+                for (var i = 0; i < events.length; i++) {
+                    if (tutor == events[i].summary.toLowerCase()) {
+                        $('#content').append('<div class="tutor-schedule">' + events[i].start.dateTime.substr(0, 16).replace('T', ' ')  + ' -- ' + events[i].end.dateTime.substr(11, 5) + '</div>');
+                    }
+                }
+            }
+
+            function nowWorking() {
+                $('#onSelectDate').val('');
+                $('#onSelectTime').val('');
+                currentTime = moment().format("YYYY-MM-DDTHH:mm:ssZ");
+                timeMax = moment().endOf('day').format("YYYY-MM-DDTHH:mm:ssZ");
+                $('#content').empty();
+                getTutors();
+            }
+
+            function applyTime() {
+                var $date = $('#onSelectDate').val() + "T";
+                if ($('#onSelectDate').val() !== "" && $('#onSelectTime').val() !== "") {
+                    var $time = $('#onSelectTime').val() + ":00-05:00";
+                    currentTime = $date + $time;
+                } else if ($('#onSelectDate').val() !== "" && $('#onSelectTime').val() == "") {
+                    currentTime = $date + moment().startOf('day').format("YYYY-MM-DDTHH:mm:ssZ").slice(11);
+                }
+                timeMax = $date + moment().endOf('day').format("YYYY-MM-DDTHH:mm:ssZ").slice(11);
+                if ($('#onSelect .date').val() != "") {
+                    $('#content').empty();
+                }
+                getTutors();
+            }
+
+            $('#onSelect .time').timepicker({
+                'showDuration': false,
+                'timeFormat': 'H:i',
+                'minTime': '10:00',
+                'maxTime': '23:00'
+            });
+            $('#onSelect .date').datepicker({
+                'format': 'yyyy-mm-dd',
+                'autoclose': true,
+                 startDate: new Date()
+            });
+
+            $('#onSelect').datepair();
+            $('#apply').click(applyTime);
+            $('#now').click(nowWorking);
+
+            $('body').on('click', '.tutors img', function() {
+                var tutorID = this.parentNode.id;
+                currentTime = moment().format("YYYY-MM-DDTHH:mm:ssZ");
+                timeMax = moment().add(1, 'weeks').endOf('isoWeek').format("YYYY-MM-DDTHH:mm:ssZ");
+                $('#content').empty();
+                getEvents().done(function() {
+                    getTutorSchedule(tutorID, allEvents);
+                });
+            });
+
+            getTutors();
+       });
+       </script>
+  </body>
+</html>
